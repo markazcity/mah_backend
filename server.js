@@ -7,6 +7,7 @@ const express = require("express");
 const connectDB = require("./config/db");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
+const multer = require("multer");
 dotenv.config();
 
 //app
@@ -25,9 +26,9 @@ const podcast = require("./routes/podcast");
 connectDB();
 
 //app use
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
@@ -40,7 +41,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // File upload
-app.use(fileUpload());
+// app.use(fileUpload());
 
 //Mount routes
 app.use("/api/v1/newses", news);

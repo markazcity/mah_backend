@@ -2,7 +2,12 @@ const path = require("path");
 const News = require("../models/News");
 const asyncHandler = require("../middleware/async");
 const ErrorResponse = require("../utils/errorResponse");
-const { log } = require("console");
+
+require("dotenv").config();
+const upload = require("../utils/s3");
+const { log, Console } = require("console");
+
+const singleUpload = upload.single("image");
 
 // @desc    Get all newses
 // @route   GET /api/v1/newses
@@ -92,7 +97,7 @@ exports.deleteNews = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/v1/newss/:id/photo
 // @access  private
 
-exports.newsPhotoUpload = asyncHandler(async (req, res, next) => {
+exports.newsPhotoUpload2 = asyncHandler(async (req, res, next) => {
   const news = await News.findById(req.params.id);
   if (!news) {
     return next(
@@ -134,6 +139,55 @@ exports.newsPhotoUpload = asyncHandler(async (req, res, next) => {
       data: file.name,
     });
   });
+});
+
+// @desc    Upload photo for  news
+// @route   PUT /api/v1/newss/:id/photo
+// @access  private to s3 bucket
+
+exports.newsPhotoUpload = asyncHandler(async (req, res, next) => {
+  const news = await News.findById(req.params.id);
+  if (!news) {
+    return next(
+      new ErrorResponse(`news not found with id of ${req.params.id}`, 404)
+    );
+  }
+  console.log(req.file);
+  // if (!req.files) {
+  //   return next(new ErrorResponse(`Please upload a file`, 400));
+  // }
+  // const file = req.files.file;
+
+  singleUpload(req, res, function (err) {
+    console.log(req.file);
+    if (err) {
+      return res.json({
+        success: false,
+        errors: {
+          title: "Image Upload Error",
+          detail: err.message,
+          error: err,
+        },
+      });
+    }
+
+    let update = { imgUrl: req.file.location };
+
+    User.findByIdAndUpdate(req.params.id, update, { new: true })
+      .then((user) => res.status(200).json({ success: true, user: user }))
+      .catch((err) => res.status(400).json({ success: false, error: err }));
+  });
+
+  // const uploadImg = uploadFile().single("image");
+  // uploadImg(req, res, (err) => {
+  //   if (err)
+  //     return res.status(400).json({ success: false, message: err.message });
+  //   console.log(req.files);
+  //   res.status(200).json({
+  //     success: true,
+  //     data: req.files,
+  //   });
+  // });
 });
 
 // @desc    Upload video for  bootcamp

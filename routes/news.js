@@ -13,6 +13,6 @@ const router = express.Router();
 
 router.route("/").get(getNewses).post(createNews);
 router.route("/:id").get(getNews).delete(deleteNews).put(updateNews);
-router.route("/:id/photo").put(newsPhotoUpload);
+router.route("/:id/photo").post(newsPhotoUpload);
 
 module.exports = router;
