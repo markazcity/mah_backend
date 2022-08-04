@@ -17,9 +17,8 @@ const s3 = new aws.S3({
 
 const fileFilter = (req, file, cb) => {
   if (
-    file.mimetype === "image/jpeg" ||
-    file.mimetype === "image/png" ||
-    file.mimetype === "image/webp"
+    file.mimetype.split("/")[0] === "image" ||
+    file.mimetype.split("/")[0] === "audio"
   ) {
     cb(null, true);
   } else {
@@ -38,7 +37,8 @@ const upload = multer({
       cb(null, { fieldName: "TESTING_METADATA" });
     },
     key: function (req, file, cb) {
-      cb(null, Date.now().toString());
+      const { originalname } = file;
+      cb(null, `uploads/${Date.now().toString()} - ${originalname.toString()}`);
     },
   }),
 });

@@ -5,7 +5,6 @@ const ErrorResponse = require("../utils/errorResponse");
 
 require("dotenv").config();
 const upload = require("../utils/s3");
-const { log, Console } = require("console");
 
 const singleUpload = upload.single("image");
 
@@ -152,14 +151,12 @@ exports.newsPhotoUpload = asyncHandler(async (req, res, next) => {
       new ErrorResponse(`news not found with id of ${req.params.id}`, 404)
     );
   }
-  console.log(req.file);
-  // if (!req.files) {
-  //   return next(new ErrorResponse(`Please upload a file`, 400));
-  // }
-  // const file = req.files.file;
 
-  singleUpload(req, res, function (err) {
-    console.log(req.file);
+  singleUpload(req, res, async function (err) {
+    if (!req.file) {
+      return next(new ErrorResponse(`Please upload a file`, 400));
+    }
+
     if (err) {
       return res.json({
         success: false,
@@ -170,24 +167,12 @@ exports.newsPhotoUpload = asyncHandler(async (req, res, next) => {
         },
       });
     }
-
     let update = { imgUrl: req.file.location };
 
-    User.findByIdAndUpdate(req.params.id, update, { new: true })
-      .then((user) => res.status(200).json({ success: true, user: user }))
+    await News.findByIdAndUpdate(req.params.id, update, { new: true })
+      .then((news) => res.status(200).json({ success: true, news: news }))
       .catch((err) => res.status(400).json({ success: false, error: err }));
   });
-
-  // const uploadImg = uploadFile().single("image");
-  // uploadImg(req, res, (err) => {
-  //   if (err)
-  //     return res.status(400).json({ success: false, message: err.message });
-  //   console.log(req.files);
-  //   res.status(200).json({
-  //     success: true,
-  //     data: req.files,
-  //   });
-  // });
 });
 
 // @desc    Upload video for  bootcamp

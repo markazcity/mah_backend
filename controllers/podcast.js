@@ -2,7 +2,12 @@ const path = require("path");
 const Podcast = require("../models/Podcast");
 const asyncHandler = require("../middleware/async");
 const ErrorResponse = require("../utils/errorResponse");
-const { log } = require("console");
+
+//s3
+require("dotenv").config();
+const upload = require("../utils/s3");
+const singleUpload = upload.single("image");
+const UploadAudio = upload.single("audio");
 
 // @desc    Get all podcast
 // @route   GET /api/v1/podcast
@@ -98,40 +103,28 @@ exports.podcastPhotoUpload = asyncHandler(async (req, res, next) => {
       new ErrorResponse(`podcast not found with id of ${req.params.id}`, 404)
     );
   }
-  if (!req.files) {
-    return next(new ErrorResponse(`Please upload a file`, 400));
-  }
-  const file = req.files.file;
-
-  // make sure the images is a photo
-  if (!file.mimetype.startsWith("image")) {
-    return next(new ErrorResponse(`Please upload a image file`, 400));
-  }
-
-  // CHECK FILESIZE
-  if (file.size > process.env.MAX_PHOTO_UPLOAD) {
-    return next(
-      new ErrorResponse(
-        `Please upload a image less than ${process.env.MAX_PHOTO_UPLOAD}`,
-        400
-      )
-    );
-  }
-
-  //create custome file name
-  file.name = `podcast_${podcast.id}${path.parse(file.name).ext}`;
-
-  file.mv(`${process.env.PHOTO_UPLOAD_PATH}/${file.name}`, async (err) => {
-    if (err) {
-      console.log(err);
-      return next(new ErrorResponse(`Problem with file upload`, 500));
+  singleUpload(req, res, async function (err) {
+    if (!req.file) {
+      return next(new ErrorResponse(`Please upload a file`, 400));
     }
 
-    await Podcast.findByIdAndUpdate(req.params.id, { imgUrl: file.name });
-    res.status(200).json({
-      success: true,
-      data: file.name,
-    });
+    if (err) {
+      return res.json({
+        success: false,
+        errors: {
+          title: "Image Upload Error",
+          detail: err.message,
+          error: err,
+        },
+      });
+    }
+    let update = { imgUrl: req.file.location };
+
+    await Podcast.findByIdAndUpdate(req.params.id, update, { new: true })
+      .then((podcast) =>
+        res.status(200).json({ success: true, podcast: podcast })
+      )
+      .catch((err) => res.status(400).json({ success: false, error: err }));
   });
 });
 
@@ -146,39 +139,28 @@ exports.podcastAudioUpload = asyncHandler(async (req, res, next) => {
       new ErrorResponse(`podcast not found with id of ${req.params.id}`, 404)
     );
   }
-  if (!req.files) {
-    return next(new ErrorResponse(`Please upload a file`, 400));
-  }
-  const file = req.files.file;
-  console.log(req.files.file);
-  // make sure the images is a photo
-  if (!file.mimetype.startsWith("audio")) {
-    return next(new ErrorResponse(`Please upload a audio file`, 400));
-  }
 
-  // CHECK FILESIZE
-  if (file.size > process.env.MAX_AUDIO_UPLOAD) {
-    return next(
-      new ErrorResponse(
-        `Please upload a audio less than ${process.env.MAX_AUDIO_UPLOAD}`,
-        400
-      )
-    );
-  }
-
-  //create custome file name
-  file.name = `audio_${podcast._id}${path.parse(file.name).ext}`;
-
-  file.mv(`${process.env.AUDIO_UPLOAD_PATH}/${file.name}`, async (err) => {
-    if (err) {
-      console.log(err);
-      return next(new ErrorResponse(`Problem with file upload`, 500));
+  UploadAudio(req, res, async function (err) {
+    if (!req.file) {
+      return next(new ErrorResponse(`Please upload a file`, 400));
     }
 
-    await Podcast.findByIdAndUpdate(req.params.id, { audioUrl: file.name });
-    res.status(200).json({
-      success: true,
-      data: file.name,
-    });
+    if (err) {
+      return res.json({
+        success: false,
+        errors: {
+          title: "audio Upload Error",
+          detail: err.message,
+          error: err,
+        },
+      });
+    }
+    let update = { audioUrl: req.file.location };
+
+    await Podcast.findByIdAndUpdate(req.params.id, update, { new: true })
+      .then((podcast) =>
+        res.status(200).json({ success: true, podcast: podcast })
+      )
+      .catch((err) => res.status(400).json({ success: false, error: err }));
   });
 });
