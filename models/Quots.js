@@ -6,9 +6,13 @@ const QuotsSchema = new mongoose.Schema(
       unique: true,
       required: [true, "Please enter the quotes"],
     },
+    date: {
+      type: String,
+      default: Date.now(),
+    },
     createdAt: {
       type: Date,
-      default: Date.now,
+      default: Date.now(),
     },
     isPublished: {
       type: Boolean,

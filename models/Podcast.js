@@ -6,6 +6,10 @@ const AudioSchema = new mongoose.Schema(
       unique: true,
       required: [true, "Please enter the title"],
     },
+    date: {
+      type: String,
+      default: Date.now(),
+    },
     createdAt: {
       type: Date,
       default: Date.now,
